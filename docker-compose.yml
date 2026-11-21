@@ -5,6 +5,7 @@ services:
       POSTGRES_DB: ${DB_NAME:-weather_db}
       POSTGRES_USER: ${DB_USER:-weather_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      TZ: ${TZ:-Europe/Athens}
     ports:
       - "5432:5432"
     volumes:
