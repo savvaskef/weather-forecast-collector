@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+session_start();
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Config\Database;
@@ -25,6 +27,49 @@ $daysLimit = isset($_GET['days']) && is_numeric($_GET['days'])
     ? max(1, min(7, (int) $_GET['days']))
     : 1;
 
+$cliDays = isset($_GET['cli_days']) && is_numeric($_GET['cli_days'])
+    ? max(1, min(7, (int) $_GET['cli_days']))
+    : $daysLimit;
+
+// Run collector when requested via GET, then redirect so refresh does not re-fetch
+if (isset($_GET['run_cli']) && $_GET['run_cli'] === '1') {
+    $scriptPath = __DIR__ . '/../bin/fetch-forecasts.php';
+    $cliCommand = 'php ' . escapeshellarg($scriptPath) . ' --force --days=' . $cliDays . ' 2>&1';
+    $cliOutput = [];
+    $cliExitCode = 1;
+    exec($cliCommand, $cliOutput, $cliExitCode);
+
+    if ($cliExitCode === 0) {
+        $_SESSION['flash_success'] = "Forecasts refreshed for {$cliDays} day(s).";
+        unset($_SESSION['flash_error']);
+    } else {
+        $_SESSION['flash_error'] = [
+            'command' => $cliCommand,
+            'exit_code' => $cliExitCode,
+            'output' => implode("\n", $cliOutput),
+        ];
+        unset($_SESSION['flash_success']);
+    }
+
+    $redirectParams = [
+        'location_id' => $selectedLocationId,
+        'provider' => $selectedProvider,
+        'days' => max($daysLimit, $cliDays),
+        'cli_days' => $cliDays,
+    ];
+    if ($selectedLocationId === null) {
+        unset($redirectParams['location_id']);
+    }
+
+    header('Location: ?' . http_build_query($redirectParams));
+    exit;
+}
+
+$flashSuccess = $_SESSION['flash_success'] ?? null;
+$flashError = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
+// --- Existing read-only forecast viewer queries ---
 $dailyRows = [];
 $hourlyRows = [];
 $machineTz = new DateTimeZone(date_default_timezone_get());
@@ -82,6 +127,7 @@ if ($selectedLocationId !== null) {
     $stmtHourly->execute();
     $hourlyRows = $stmtHourly->fetchAll();
 }
+
 function h(mixed $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -96,11 +142,18 @@ function h(mixed $value): string
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; margin: 2rem; background: #0f172a; color: #e2e8f0; }
     h1, h2 { margin-top: 0; color: #f8fafc; }
-    form.filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; background: #1e293b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    .runner-panel { background: #172033; border: 1px solid #334155; padding: 1rem; border-radius: 8px; margin-bottom: 1.75rem; }
+    form.runner-form, form.filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; }
+    form.filters { background: #1e293b; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
     label { display: flex; flex-direction: column; font-size: 0.875rem; gap: 0.25rem; color: #cbd5e1; }
     select, button { padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; }
     button { background: #2563eb; border-color: #2563eb; cursor: pointer; font-weight: 600; }
     button:hover { background: #1d4ed8; }
+    .status-ok { margin-top: 0.85rem; color: #4ade80; font-size: 0.875rem; font-weight: 600; }
+    .error-box { margin-top: 0.85rem; background: #2a1215; border: 1px solid #991b1b; border-radius: 6px; padding: 0.85rem; }
+    .error-meta { font-size: 0.875rem; color: #fca5a5; margin-bottom: 0.5rem; }
+    pre.cli-output { margin: 0; background: #090d16; color: #fecaca; padding: 0.75rem; border-radius: 6px; overflow-x: auto; font-size: 0.82rem; max-height: 280px; }
+    code { color: #93c5fd; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: #1e293b; border-radius: 8px; overflow: hidden; }
     th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     th { background: #0f172a; color: #94a3b8; font-weight: 600; }
@@ -108,8 +161,46 @@ function h(mixed $value): string
   </style>
 </head>
 <body>
+  <section class="runner-panel" aria-label="Forecast Collector Runner">
+    <h2>Forecast Collector Runner</h2>
+    <p class="muted">Runs <code>bin/fetch-forecasts.php --force --days=&lt;1-7&gt;</code> and refreshes the tables below. Errors are shown only if the command fails.</p>
+
+    <form class="runner-form" method="get">
+      <?php if ($selectedLocationId !== null): ?>
+        <input type="hidden" name="location_id" value="<?= h($selectedLocationId) ?>">
+      <?php endif; ?>
+      <input type="hidden" name="provider" value="<?= h($selectedProvider) ?>">
+      <input type="hidden" name="days" value="<?= h($daysLimit) ?>">
+
+      <label>
+        Days (1-7)
+        <select name="cli_days">
+          <?php for ($d = 1; $d <= 7; $d++): ?>
+            <option value="<?= $d ?>" <?= $d === $cliDays ? 'selected' : '' ?>><?= $d ?></option>
+          <?php endfor; ?>
+        </select>
+      </label>
+
+      <button type="submit" name="run_cli" value="1">Run Script</button>
+    </form>
+
+    <?php if (is_string($flashSuccess)): ?>
+      <div class="status-ok"><?= h($flashSuccess) ?></div>
+    <?php endif; ?>
+
+    <?php if (is_array($flashError)): ?>
+      <div class="error-box">
+        <div class="error-meta">
+          <strong>Command failed (exit <?= h($flashError['exit_code']) ?>):</strong>
+          <code><?= h($flashError['command']) ?></code>
+        </div>
+        <pre class="cli-output"><?= h($flashError['output']) ?></pre>
+      </div>
+    <?php endif; ?>
+  </section>
+
   <h1>Stored Weather Forecasts</h1>
-  <p class="muted">Read-only view of normalized forecasts in PostgreSQL (UTC timestamps, °C, mm). Run <code>bin/fetch-forecasts.php</code> to refresh data.</p>
+  <p class="muted">Read-only view of normalized forecasts in PostgreSQL (UTC timestamps, °C, mm).</p>
 
   <form class="filters" method="get">
     <label>

@@ -22,7 +22,7 @@ if ($resolution === 'hourly') {
 SELECT l.name AS location, h.provider, h.valid_at, h.temperature_c, h.precipitation_mm, h.fetched_at
 FROM hourly_forecasts h
 JOIN locations l ON l.id = h.location_id
-WHERE (:provider IS NULL OR h.provider = :provider)
+   WHERE (CAST(:provider AS text) IS NULL OR d.provider = CAST(:provider AS text))
 ORDER BY h.valid_at DESC, h.provider ASC
 LIMIT :limit
 SQL;
@@ -31,7 +31,7 @@ SQL;
 SELECT l.name AS location, d.provider, d.forecast_date, d.temp_min_c, d.temp_max_c, d.precipitation_mm, d.fetched_at
 FROM daily_forecasts d
 JOIN locations l ON l.id = d.location_id
-WHERE (:provider IS NULL OR d.provider = :provider)
+WHERE (CAST(:provider AS text) IS NULL OR d.provider = CAST(:provider AS text))
 ORDER BY d.forecast_date DESC, d.provider ASC
 LIMIT :limit
 SQL;
