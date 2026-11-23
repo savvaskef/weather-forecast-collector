@@ -94,8 +94,8 @@ docker compose exec app php bin/add-location.php --help
 
 **Verify:** Re-run the `SELECT` query above and confirm all desired locations appear with valid IDs and IANA timezones.
 
-### Step 6: Observe & Append to Database from the Container in `public/index.php`
-You are ready to observe the project's database and augment it with weather forecasts from a front-end browser:
+### Step 6: Observe & Append to Database from the Frontend in `public/index.php`
+You are ready to observe the project's database and augment it with weather forecasts from a browser:
 
 - **URL:** `http://localhost:8081`
 
