@@ -8,7 +8,7 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 
 ---
 
-## 1. Bringing a Fresh Clone to Life (End-to-End Setup)
+## 1. Bringing a Fresh Clone to Life (All you need is to run these bash commands)
 
 ### Prerequisites
 - Docker and Docker Compose (v2+)
@@ -60,7 +60,7 @@ From the project root, build the PHP image and start both `db` (PostgreSQL 17) a
 ```bash
 docker compose up -d --build
 ```
-*(On first boot, PostgreSQL automatically executes the `.sql` initialization script in `database/`, creating the schema and seeding the initial default location.)*
+*(On first boot, PostgreSQL automatically executes the `.sql` initialization script in `database/`, creating the schema and seeding the initial default location. If an older database volume already existed and initialization was skipped, reset with `docker compose down -v && docker compose up -d --build`.)*
 
 **Verify:** Confirm both containers are up and `app` exposes `0.0.0.0:8081->80/tcp`:
 ```bash
@@ -90,18 +90,13 @@ To register additional locations, use `bin/add-location.php`:
 ```bash
 docker compose exec app php bin/add-location.php --help
 ```
-*(If `bin/add-location.php` is not yet present in your branch, see Section 5 for the equivalent SQL `INSERT` statement.)*
+*(If `bin/add-location.php` is not yet present in your branch, see Section 6 for the equivalent SQL `INSERT` statement.)*
 
 **Verify:** Re-run the `SELECT` query above and confirm all desired locations appear with valid IDs and IANA timezones.
 
-### Step 6: Run Initial Forecast Collection & Consume in `public/index.php`
-Fetch and persist forecasts from the backend CLI (or trigger the same command directly from the web UI):
+### Step 6: Observe & Append to Database from the Container in `public/index.php`
+You are ready to observe the project's database and augment it with weather forecasts from a front-end browser:
 
-```bash
-docker compose exec app php bin/fetch-forecasts.php --force --days=4
-```
-
-Then open the web interface in your browser:
 - **URL:** `http://localhost:8081`
 
 **Verify:**
@@ -114,7 +109,64 @@ Then open the web interface in your browser:
 
 ---
 
-## 2. Implementation Choices
+## 2. Back-end CLI Commands
+
+All CLI tools live under `bin/` and are executed inside the `app` container via `docker compose exec app php bin/<script>.php`.
+
+### 1. `bin/fetch-forecasts.php` — Fetch & Store Forecasts
+Fetches daily and hourly forecasts from Open-Meteo and WeatherAPI.com for every registered location in `locations`, normalizes timestamps to UTC and units to °C / mm, and upserts them into PostgreSQL.
+
+- **Optional parameters:**
+  - `--days=<1-7>` *(default: `1`)* — Number of local calendar days (`TZ`) to align and store. Open-Meteo returns the full `1`–`7` day horizon, while WeatherAPI's free tier caps daily forecasts at `3` days.
+  - `--force` — Bypasses the once-per-UTC-day skip guard (`forecast_runs`) so providers are re-queried and existing rows are updated immediately.
+  - `--quiet-forecast` — Suppresses printing individual daily/hourly rows to stdout (keeps run summary/status output).
+  - `--print-hours=<N>` — Caps the number of hourly rows printed per provider in terminal output.
+- **Examples:**
+  ```bash
+  # Default run: fetch today's forecast (skips providers that already succeeded today in UTC)
+  docker compose exec app php bin/fetch-forecasts.php
+
+  # Force a fresh 5-day fetch without printing every hourly row
+  docker compose exec app php bin/fetch-forecasts.php --force --days=5 --quiet-forecast
+  ```
+
+### 2. `bin/query-forecasts.php` — Inspect Stored Forecasts
+Queries PostgreSQL directly and prints stored daily summaries and hourly rows to the terminal for quick verification without calling external APIs.
+
+- **Optional parameters:**
+  - `--days=<1-7>` *(default: `1`)* — Number of forecast days forward from today to display.
+  - `--provider=<all|open_meteo|weatherapi>` *(default: `all`)* — Filter results to a single upstream provider or show both.
+  - `--location=<id|name>` — Filter results to a specific location ID or name from the `locations` table.
+- **Examples:**
+  ```bash
+  # View stored forecasts for the next 4 days across all locations and providers
+  docker compose exec app php bin/query-forecasts.php --days=4
+
+  # Inspect only Open-Meteo rows for location ID 1 over a 3-day window
+  docker compose exec app php bin/query-forecasts.php --location=1 --provider=open_meteo --days=3
+  ```
+
+### 3. `bin/add-location.php` — Register a New Location
+Inserts a new tracked city/coordinate pair into the `locations` table so future `fetch-forecasts.php` runs collect data for it automatically.
+
+- **Arguments / options:**
+  - `<name>` / `--name=<city>` — Human-readable location label (e.g., `"Heraklion"`).
+  - `<latitude>` / `--lat=<float>` — Decimal latitude (`-90` to `90`).
+  - `<longitude>` / `--lon=<float>` — Decimal longitude (`-180` to `180`).
+  - `[timezone]` / `--tz=<IANA_TZ>` *(default: `UTC` or `TZ` from `.env`)* — Valid IANA timezone identifier (e.g., `Europe/Athens`) used for local day-boundary alignment.
+  - `--help` — Displays exact usage syntax and supported flags.
+- **Examples:**
+  ```bash
+  # Check exact CLI signature and flags
+  docker compose exec app php bin/add-location.php --help
+
+  # Register Heraklion with Europe/Athens local day alignment
+  docker compose exec app php bin/add-location.php --name="Heraklion" --lat=35.3387 --lon=25.1442 --tz="Europe/Athens"
+  ```
+
+---
+
+## 3. Implementation Choices
 
 - **Framework & Dependencies:**
   - **Vanilla PHP 8.4 (strict types)** without a full-stack web framework to keep the CLI worker fast, transparent, and dependency-light.
@@ -134,7 +186,7 @@ Then open the web interface in your browser:
 
 ---
 
-## 3. Incomplete Requirements
+## 4. Incomplete Requirements
 
 - **Automated scheduler / cron container:** Fetching is triggered manually via CLI or the web runner button; no background cron daemon or worker loop is bundled in `docker-compose.yml`.
 - **Location management UI:** Adding or editing locations after initial `.sql` seeding is handled via CLI (`bin/add-location.php`) or SQL rather than a web form in `public/index.php`.
@@ -142,7 +194,7 @@ Then open the web interface in your browser:
 
 ---
 
-## 4. Next Steps
+## 5. Next Steps
 
 - **Automated Testing:** Add PHPUnit tests covering payload normalization, UTC/local boundary alignment, and repository upsert idempotency using mocked HTTP fixtures.
 - **Scheduled Execution:** Add a lightweight cron/worker service (or host cron entry) to run `bin/fetch-forecasts.php` automatically on a daily schedule.
@@ -151,7 +203,7 @@ Then open the web interface in your browser:
 
 ---
 
-## 5. Additional Notes
+## 6. Additional Notes
 
 - **Repository Layout:**
   ```text
@@ -171,11 +223,7 @@ Then open the web interface in your browser:
   ├── Dockerfile
   └── composer.json
   ```
-- **CLI Flags (`bin/fetch-forecasts.php`):**
-  - `--force` — Bypass the once-per-UTC-day skip guard and re-fetch/upsert immediately.
-  - `--days=N` — Fetch and align `N` local calendar days (`1` to `7`, default `1`).
-  - `--quiet-forecast` — Suppress printing hourly/daily forecast rows to stdout.
-  - `--print-hours=N` — Limit how many hourly rows are printed per provider.
+
 - **Adding New Locations via SQL (Fallback):**
   ```sql
   INSERT INTO locations (name, latitude, longitude, timezone)
