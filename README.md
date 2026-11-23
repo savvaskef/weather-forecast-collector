@@ -8,7 +8,8 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 
 ---
 
-## 1. Bringing a Fresh Clone to Life (All you need is to run these bash commands)
+## 1. Bringing a Fresh Clone to Life (All you need is to run these act-verify pairs of commands.)
+
 
 ### Prerequisites
 - Docker and Docker Compose (v2+)
@@ -94,7 +95,7 @@ docker compose exec app php bin/add-location.php --help
 
 **Verify:** Re-run the `SELECT` query above and confirm all desired locations appear with valid IDs and IANA timezones.
 
-### Step 6: Observe & Append to Database from the Frontend in `public/index.php`
+### Step 6: Observe & Append to Database from the Frontend (public/index.php)
 You are ready to observe the project's database and augment it with weather forecasts from a browser:
 
 - **URL:** `http://localhost:8081`
