@@ -2,9 +2,9 @@
 
 A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetches daily and hourly weather forecasts from **Open-Meteo** and **WeatherAPI.com**, normalizes units and timestamps, and persists them idempotently into **PostgreSQL 17**.
 
-## Overview of `public/index.php`
+## Overview of back-end application test by candidate Savvas Kefalas for agroApps.gr
 
-`public/index.php` pairs an interactive **Forecast Collector Runner** panel at the top with a read-only forecast viewer below. Selecting `1`–`7` days and clicking **Run Script** executes `bin/fetch-forecasts.php --force --days=<1-7>` on demand—staying silent on success, showing command output only on failure, and using a redirect/flash flow so browser refreshes or filter changes never re-trigger external API calls. Below the runner, you can filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).
+App's commands are called  in the frontend.In the first area (Forecast Collector Runner) two apis by two prividers (weatherApi and OpenMeteo) are queried from 1-7 days for daily and hourly weather forecasts. When you click **Run Script**  bin/query-forecasts.php executes code to connect and retrieve forecasts.In a real setting, this would need to be ran periodically( ie in a cron job).Then on section Stored Weather Forecasts, the results of your queries are displayed(read-only) for `1`–`7` days.This is done by executing `bin/fetch-forecasts.php --force --days=<1-7>`. In the querystring there are parameters (accesible from the interface) to filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).
 
 ---
 
