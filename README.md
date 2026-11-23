@@ -18,6 +18,9 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 - A free API key from [WeatherAPI.com](https://www.weatherapi.com/) *(Open-Meteo requires no API key)*
 
 > **Windows (Git Bash) note:** Prefix `docker compose exec` commands with `MSYS_NO_PATHCONV=1` so container paths like `/var/www/html/...` are not rewritten by MSYS.
+
+
+
 > **Linux note:** If you get a `permission denied` error on `/var/run/docker.sock`, add your user to the `docker` group (`sudo usermod -aG docker $USER`), then log out/in (or run `newgrp docker`).
 
 
