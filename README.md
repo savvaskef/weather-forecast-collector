@@ -16,6 +16,8 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 - A free API key from [WeatherAPI.com](https://www.weatherapi.com/) *(Open-Meteo requires no API key)*
 
 > **Windows (Git Bash) note:** Prefix `docker compose exec` commands with `MSYS_NO_PATHCONV=1` so container paths like `/var/www/html/...` are not rewritten by MSYS.
+> **Linux note:** If you get a `permission denied` error on `/var/run/docker.sock`, add your user to the `docker` group (`sudo usermod -aG docker $USER`), then log out/in (or run `newgrp docker`).
+
 
 ### Step 1: Create Your Working Directory & Clone the Project
 Run all setup, Docker, and CLI commands from the repository root directory so relative paths (`database/`, `bin/`, `public/`, `.env`) resolve consistently:
@@ -80,6 +82,9 @@ docker compose exec app composer install
 docker compose exec app test -f vendor/autoload.php && echo "Composer dependencies ready"
 ```
 
+*(If you get error `detected dubious ownership in repository at '/var/www/html'` especially on Linux bind mounts, trust the directory inside the container first: `docker compose exec app git config --global --add safe.directory /var/www/html`.)*
+
+
 ### Step 5: Verify the Seeded Location & Add Extra Locations (`bin/add-location.php`)
 Check the initial location seeded from `database/*.sql`:
 
@@ -87,13 +92,11 @@ Check the initial location seeded from `database/*.sql`:
 docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, name, latitude, longitude, timezone FROM locations ORDER BY id;"'
 ```
 
-To register additional locations, use `bin/add-location.php`:
-```bash
-docker compose exec app php bin/add-location.php --help
-```
-*(If `bin/add-location.php` is not yet present in your branch, see Section 6 for the equivalent SQL `INSERT` statement.)*
+**Verify:** You should see Thessaloniki as the only location to be queried for weather forecasts.
 
-**Verify:** Re-run the `SELECT` query above and confirm all desired locations appear with valid IDs and IANA timezones.
+*You can  register additional locations, use `bin/add-location.php`described in the Section 2 if you wish to do it with CLI or  
+see Section 6 for the equivalent SQL `INSERT` statement.)*
+
 
 ### Step 6: Observe & Append to Database from the Frontend (public/index.php)
 You are ready to observe the project's database and augment it with weather forecasts from a browser:
