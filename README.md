@@ -4,7 +4,8 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 
 ## Overview of back-end application test by candidate Savvas Kefalas for agroApps.gr
 
-App's commands are called  in the frontend.In the first area (Forecast Collector Runner) two apis by two prividers (weatherApi and OpenMeteo) are queried from 1-7 days for daily and hourly weather forecasts. When you click **Run Script**  `bin/query-forecasts.php` executes code to connect and retrieve forecasts.In a real setting, this would need to be ran periodically( ie in a cron job).Then on section Stored Weather Forecasts, the results of your queries are displayed(read-only) for `1`–`7` days.This is done by executing `bin/fetch-forecasts.php --force --days=<1-7>`. In the querystring there are parameters (accesible from the interface) to filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).
+App's commands are called  in the frontend.In the first area (Forecast Collector Runner) two apis by the two providers are queried from 1-7 days for daily and hourly weather forecasts. When you click **Run Script**  `bin/query-forecasts.php` executes code to connect and retrieve forecasts.In a real setting, this would need to be ran periodically( ie in a cron job).
+Then on section Stored Weather Forecasts, the results of your queries are displayed(read-only) for `1`–`7` days.This is done by executing `bin/fetch-forecasts.php --force --days=<1-7>`. In the querystring there are parameters (accesible from the interface) to filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).
 
 ---
 
