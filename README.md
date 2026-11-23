@@ -1,8 +1,8 @@
-# Weather Forecast Collector
+# Weather Forecast Collector:a back-end application test by candidate Savvas Kefalas for agroApps.gr
 
 A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetches daily and hourly weather forecasts from **Open-Meteo** and **WeatherAPI.com**, normalizes units and timestamps, and persists them idempotently into **PostgreSQL 17**.
 
-## Overview of back-end application test by candidate Savvas Kefalas for agroApps.gr
+## What you will see in frontend(http://localhost:8081/), once you install the dockerized app
 
 App's commands are called  in the frontend.In the first area (Forecast Collector Runner) two apis by the two providers are queried from 1-7 days for daily and hourly weather forecasts. When you click **Run Script**  `bin/query-forecasts.php` executes code to connect and retrieve forecasts.In a real setting, this would need to be ran periodically( ie in a cron job).
 Then on section Stored Weather Forecasts, the results of your queries are displayed(read-only) for `1`–`7` days.This is done by executing `bin/fetch-forecasts.php --force --days=<1-7>`. In the querystring there are parameters (accesible from the interface) to filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).
