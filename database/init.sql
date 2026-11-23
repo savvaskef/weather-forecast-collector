@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS hourly_forecasts (
     CONSTRAINT uq_hourly_forecast UNIQUE (location_id, provider, valid_at)
 );
 
+INSERT INTO locations (name, latitude, longitude, timezone)
+VALUES
+    ('Thessaloniki', 40.6401, 22.9444, 'Europe/Athens')
+ON CONFLICT DO NOTHING;
+
+
 CREATE TABLE IF NOT EXISTS daily_forecasts (
     id BIGSERIAL PRIMARY KEY,
     location_id INT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,

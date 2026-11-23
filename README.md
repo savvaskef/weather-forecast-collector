@@ -21,7 +21,7 @@ Run all setup, Docker, and CLI commands from the repository root directory so re
 
 ```bash
 mkdir -p ~/projects && cd ~/projects
-git clone <your-repo-url> weather-forecast-collector
+git clone https://github.com/savvaskef/weather-forecast-collector.git weather-forecast-collector
 cd weather-forecast-collector
 ```
 
