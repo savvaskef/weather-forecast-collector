@@ -234,6 +234,9 @@ Inserts a new tracked city/coordinate pair into the `locations` table so future 
   ```
 
 - **Adding New Locations via SQL (Fallback):**
+
+- If you can't or don't want to run a command to populate locations you can still use good old sql
+\you will still need the password but you have options.
   ```sql
   INSERT INTO locations (name, latitude, longitude, timezone)
   VALUES ('Heraklion', 35.33870, 25.14420, 'Europe/Athens')
