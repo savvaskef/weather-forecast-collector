@@ -7,7 +7,8 @@ A Dockerized PHP 8.4 CLI application and lightweight web runner/viewer that fetc
 App's commands are testable in the frontend. In the first area (Forecast Collector Runner) the apis  are queried from 1-7 days for daily and hourly weather forecasts. When you click **Run Script**  `bin/query-forecasts.php` executes code to connect and retrieve forecasts.In a real setting, this would need to be ran periodically( ie in a cron job).
 Then on section Stored Weather Forecasts, the results of your queries are displayed(read-only) for `1`–`7` days.This is done by executing `bin/fetch-forecasts.php --force --days=<1-7>`. In the querystring there are parameters (accesible from the interface) to filter stored daily and hourly PostgreSQL rows by location, provider (`all`, `open_meteo`, `weatherapi`), and day window (`1`–`7`).Just click **Apply** to view a subset of the forecasts now inside the database  
 
-<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/654c3bec-c8d7-467d-a024-96b1d360f2af" />
+ <img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/af5528d5-4f77-4ece-a382-d6f36484b279" />
+
 
 ---
 
